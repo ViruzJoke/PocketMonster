@@ -4,11 +4,11 @@ body {
     align-items: center;
     height: 100vh;
     margin: 0;
-    background-color: #87CEEB; /* Sky blue background */
+    background-color: #808080; /* Gray background */
 }
 
 #character {
-    width: 64px; /* Example size */
-    height: 64px; /* Example size */
+    width: 256px; /* 4x size */
+    height: 256px; /* 4x size */
     image-rendering: pixelated; /* Keep the pixel art sharp */
 }
