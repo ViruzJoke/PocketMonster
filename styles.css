@@ -4,7 +4,9 @@ html,body{ height:100%; margin:0; font-family: Inter, ui-sans-serif, system-ui, 
 #scene { position:fixed; inset:0; z-index:1 }
 #ui { position:relative; z-index:3; max-width:420px; padding:20px; margin:18px; background:linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01)); border-radius:12px; backdrop-filter: blur(6px); box-shadow:0 6px 30px rgba(0,0,0,0.6); }
 #controls { margin-top:12px; display:flex; gap:8px }
-button{ background:linear-gradient(180deg,#2dd4bf,#06b6d4); border:0; color:#04212a; padding:10px 14px; border-radius:8px; font-weight:600; cursor:pointer }
+#controls { margin-top:12px; display:flex; gap:8px; flex-wrap:wrap }
+button, #loadModelBtn, #resetModelBtn{ background:linear-gradient(180deg,#2dd4bf,#06b6d4); border:0; color:#04212a; padding:10px 12px; border-radius:8px; font-weight:600; cursor:pointer }
+input[type="file"]{ display:none }
 button:active{ transform:translateY(1px) }
 #stats{ display:flex; gap:16px }
 .hint{ opacity:0.8; font-size:13px }
