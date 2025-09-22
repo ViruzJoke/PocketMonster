@@ -11,7 +11,7 @@ function init(){
   scene.fog = new THREE.FogExp2(0x07102a, 0.02);
 
   camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
-  camera.position.set(0, 2.2, 6);
+  camera.position.set(0, 1.6, 5.2);
 
   renderer = new THREE.WebGLRenderer({ antialias:true, alpha:true });
   renderer.setSize(window.innerWidth, window.innerHeight);
@@ -33,7 +33,7 @@ function init(){
   const groundMat = new THREE.MeshStandardMaterial({ color:0x071436, roughness:0.8, metalness:0.1 });
   const ground = new THREE.Mesh(groundGeo, groundMat);
   ground.rotation.x = -Math.PI/2;
-  ground.position.y = -1.2;
+  ground.position.y = -1.4;
   scene.add(ground);
 
   // monster
@@ -75,10 +75,10 @@ function init(){
 
 function createMonster(){
   // Single round blob monster
-  const bodyMat = new THREE.MeshStandardMaterial({ color:0x7de3ff, roughness:0.35, metalness:0.08, emissive:0x002a35, emissiveIntensity:0.15, flatShading: false });
-  const bodyGeo = new THREE.SphereGeometry(1.2, 64, 64);
+  const bodyMat = new THREE.MeshStandardMaterial({ color:0x7de3ff, roughness:0.32, metalness:0.06, emissive:0x001822, emissiveIntensity:0.12, clearcoat:0.6, clearcoatRoughness:0.15 });
+  const bodyGeo = new THREE.SphereGeometry(1.4, 64, 64);
   const blob = new THREE.Mesh(bodyGeo, bodyMat);
-  blob.position.set(0, 0, 0);
+  blob.position.set(0, 0.15, 0);
   blob.castShadow = true;
   blob.receiveShadow = true;
   monsterGroup.add(blob);
@@ -88,16 +88,23 @@ function createMonster(){
   const eyeMat = new THREE.MeshStandardMaterial({ color:0x001018, roughness:0.2, metalness:0.3 });
   const leftEye = new THREE.Mesh(eyeGeo, eyeMat);
   const rightEye = leftEye.clone();
-  leftEye.position.set(-0.35, 0.15, 1.02);
-  rightEye.position.set(0.35, 0.15, 1.02);
-  monsterGroup.add(leftEye, rightEye);
+  leftEye.position.set(-0.32, 0.22, 0.95);
+  rightEye.position.set(0.32, 0.22, 0.95);
+  blob.add(leftEye, rightEye);
 
   // Eye glints
   const glintGeo = new THREE.CircleGeometry(0.04, 12);
   const glintMat = new THREE.MeshBasicMaterial({ color:0xffffff });
   const g1 = new THREE.Mesh(glintGeo, glintMat); g1.position.set(-0.28,0.28,1.06); g1.rotation.x = -0.3;
   const g2 = g1.clone(); g2.position.set(0.4,0.28,1.06);
-  monsterGroup.add(g1,g2);
+  blob.add(g1,g2);
+
+  // cute cheeks
+  const cheekGeo = new THREE.SphereGeometry(0.16, 16, 12);
+  const cheekMat = new THREE.MeshStandardMaterial({ color:0xffb6c1, roughness:0.6, metalness:0 });
+  const c1 = new THREE.Mesh(cheekGeo, cheekMat); c1.position.set(-0.55, 0.0, 0.9); c1.scale.set(1.0,0.6,0.4);
+  const c2 = c1.clone(); c2.position.set(0.55, 0.0, 0.9);
+  blob.add(c1,c2);
 
   // subtle material sheen shader injection (kept for blob)
   bodyMat.onBeforeCompile = shader => {
