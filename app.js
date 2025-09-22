@@ -60,6 +60,9 @@ function init(){
   document.getElementById('feedBtn').addEventListener('click', () => { feed(); });
   document.getElementById('playBtn').addEventListener('click', () => { playWith(); });
   document.getElementById('cleanBtn').addEventListener('click', () => { clean(); });
+  document.getElementById('loadModelBtn').addEventListener('click', () => document.getElementById('modelFile').click());
+  document.getElementById('modelFile').addEventListener('change', onModelFileSelected);
+  document.getElementById('resetModelBtn').addEventListener('click', () => { resetModel(); });
 
   window.addEventListener('resize', onWindowResize);
   // initialize displayed stats
@@ -127,6 +130,58 @@ function createMonster(){
   monsterGroup.userData.bottomShell = bottomShell;
   monsterGroup.userData.hatchProgress = 0; // 0..1
   monsterGroup.userData.hatched = false;
+  // clear any previously loaded custom model
+  monsterGroup.userData.customModel = null;
+}
+
+function onModelFileSelected(e){
+  const f = e.target.files && e.target.files[0];
+  if(!f) return;
+  const url = URL.createObjectURL(f);
+  loadGLTF(url);
+  // clear selection
+  e.target.value = '';
+}
+
+function loadGLTF(url){
+  // remove existing custom model if any
+  if(monsterGroup.userData.customModel){
+    monsterGroup.remove(monsterGroup.userData.customModel);
+    monsterGroup.userData.customModel.traverse && monsterGroup.userData.customModel.traverse(c => { if(c.geometry) c.geometry.dispose(); });
+    monsterGroup.userData.customModel = null;
+  }
+  const loader = new THREE.GLTFLoader();
+  loader.load(url, gltf => {
+    const model = gltf.scene || gltf.scenes[0];
+    // normalize scale and center
+    const box = new THREE.Box3().setFromObject(model);
+    const size = new THREE.Vector3(); box.getSize(size);
+    const maxDim = Math.max(size.x, size.y, size.z);
+    const scale = 1.6 / maxDim;
+    model.scale.setScalar(scale);
+    box.setFromObject(model);
+    const center = new THREE.Vector3(); box.getCenter(center);
+    model.position.sub(center);
+    model.position.y = -0.2; // slight grounding
+    monsterGroup.add(model);
+    monsterGroup.userData.customModel = model;
+    // hide default hatchling parts
+    if(monsterGroup.userData.chick) monsterGroup.userData.chick.visible = false;
+    if(monsterGroup.userData.topShell) monsterGroup.userData.topShell.visible = false;
+    if(monsterGroup.userData.bottomShell) monsterGroup.userData.bottomShell.visible = false;
+    URL.revokeObjectURL(url);
+  }, undefined, err => { console.error('GLTF load error', err); URL.revokeObjectURL(url); });
+}
+
+function resetModel(){
+  if(monsterGroup.userData.customModel){
+    monsterGroup.remove(monsterGroup.userData.customModel);
+    monsterGroup.userData.customModel = null;
+  }
+  // restore default parts
+  if(monsterGroup.userData.chick) monsterGroup.userData.chick.visible = true;
+  if(monsterGroup.userData.topShell) monsterGroup.userData.topShell.visible = true;
+  if(monsterGroup.userData.bottomShell) monsterGroup.userData.bottomShell.visible = true;
 }
 
 function onWindowResize(){
