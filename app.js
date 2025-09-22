@@ -74,49 +74,59 @@ function init(){
 }
 
 function createMonster(){
-  // Single round blob monster
-  const bodyMat = new THREE.MeshStandardMaterial({ color:0x7de3ff, roughness:0.32, metalness:0.06, emissive:0x001822, emissiveIntensity:0.12, clearcoat:0.6, clearcoatRoughness:0.15 });
-  const bodyGeo = new THREE.SphereGeometry(1.4, 64, 64);
-  const blob = new THREE.Mesh(bodyGeo, bodyMat);
-  blob.position.set(0, 0.15, 0);
-  blob.castShadow = true;
-  blob.receiveShadow = true;
-  monsterGroup.add(blob);
+  // Hatchling: egg shell + small body that pops out
+  const shellMat = new THREE.MeshStandardMaterial({ color:0xffffff, roughness:0.7, metalness:0.0 });
+  const shellGeo = new THREE.SphereGeometry(1.6, 32, 16, 0, Math.PI);
+  // bottom half (upright)
+  const bottomShell = new THREE.Mesh(shellGeo, shellMat);
+  bottomShell.rotation.x = Math.PI; // flip cup
+  bottomShell.position.set(0, -0.5, 0);
+  bottomShell.scale.set(1.0,0.6,1.0);
+  monsterGroup.add(bottomShell);
 
-  // Eyes (front-facing)
-  const eyeGeo = new THREE.SphereGeometry(0.11, 16, 12);
-  const eyeMat = new THREE.MeshStandardMaterial({ color:0x001018, roughness:0.2, metalness:0.3 });
+  // top cracked shell half (rotated outwards)
+  const topShell = new THREE.Mesh(shellGeo, shellMat);
+  topShell.position.set(0, 0.9, 0);
+  topShell.scale.set(1.0,0.6,1.0);
+  topShell.rotation.x = -0.6;
+  monsterGroup.add(topShell);
+
+  // small hatchling body
+  const bodyMat = new THREE.MeshStandardMaterial({ color:0x9fe8ff, roughness:0.32, metalness:0.02, emissive:0x001822, emissiveIntensity:0.06, clearcoat:0.5, clearcoatRoughness:0.18 });
+  const bodyGeo = new THREE.SphereGeometry(0.9, 48, 32);
+  const chick = new THREE.Mesh(bodyGeo, bodyMat);
+  chick.position.set(0, -0.4, 0);
+  monsterGroup.add(chick);
+
+  // eyes on chick
+  const eyeGeo = new THREE.SphereGeometry(0.08, 12, 10);
+  const eyeMat = new THREE.MeshStandardMaterial({ color:0x001018, roughness:0.2, metalness:0.2 });
   const leftEye = new THREE.Mesh(eyeGeo, eyeMat);
   const rightEye = leftEye.clone();
-  leftEye.position.set(-0.32, 0.22, 0.95);
-  rightEye.position.set(0.32, 0.22, 0.95);
-  blob.add(leftEye, rightEye);
+  leftEye.position.set(-0.22, -0.05, 0.78);
+  rightEye.position.set(0.22, -0.05, 0.78);
+  chick.add(leftEye, rightEye);
 
-  // Eye glints
-  const glintGeo = new THREE.CircleGeometry(0.04, 12);
+  // glints
+  const glintGeo = new THREE.CircleGeometry(0.03, 12);
   const glintMat = new THREE.MeshBasicMaterial({ color:0xffffff });
-  const g1 = new THREE.Mesh(glintGeo, glintMat); g1.position.set(-0.28,0.28,1.06); g1.rotation.x = -0.3;
-  const g2 = g1.clone(); g2.position.set(0.4,0.28,1.06);
-  blob.add(g1,g2);
+  const g1 = new THREE.Mesh(glintGeo, glintMat); g1.position.set(-0.18,0.02,0.82); g1.rotation.x = -0.3;
+  const g2 = g1.clone(); g2.position.set(0.26,0.02,0.82);
+  chick.add(g1,g2);
 
-  // cute cheeks
-  const cheekGeo = new THREE.SphereGeometry(0.16, 16, 12);
-  const cheekMat = new THREE.MeshStandardMaterial({ color:0xffb6c1, roughness:0.6, metalness:0 });
-  const c1 = new THREE.Mesh(cheekGeo, cheekMat); c1.position.set(-0.55, 0.0, 0.9); c1.scale.set(1.0,0.6,0.4);
-  const c2 = c1.clone(); c2.position.set(0.55, 0.0, 0.9);
-  blob.add(c1,c2);
+  // small cheeks
+  const cheekGeo = new THREE.SphereGeometry(0.11, 12, 10);
+  const cheekMat = new THREE.MeshStandardMaterial({ color:0xffb6c1, roughness:0.6 });
+  const c1 = new THREE.Mesh(cheekGeo, cheekMat); c1.position.set(-0.36, -0.12, 0.65); c1.scale.set(1,0.7,0.5);
+  const c2 = c1.clone(); c2.position.set(0.36, -0.12, 0.65);
+  chick.add(c1,c2);
 
-  // subtle material sheen shader injection (kept for blob)
-  bodyMat.onBeforeCompile = shader => {
-    shader.uniforms.time = { value: 0 };
-    shader.fragmentShader = 'uniform float time;\n' + shader.fragmentShader;
-    const inject = '\nfloat glow = 0.06 * (0.5 + 0.5 * sin(time * 1.6 + position.y * 2.0));\nvec3 addCol = vec3(0.02,0.06,0.08) * glow;\n#ifdef USE_LIGHTMAP\nmeasuredLambert += addCol;\n#else\nmeasuredLambert += addCol;\n#endif\n';
-    shader.fragmentShader = shader.fragmentShader.replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>' + inject);
-    bodyMat.userData._shader = shader;
-  };
-
-  // store reference for wobble animation
-  monsterGroup.userData.blob = blob;
+  // egg hatch state
+  monsterGroup.userData.chick = chick;
+  monsterGroup.userData.topShell = topShell;
+  monsterGroup.userData.bottomShell = bottomShell;
+  monsterGroup.userData.hatchProgress = 0; // 0..1
+  monsterGroup.userData.hatched = false;
 }
 
 function onWindowResize(){
@@ -201,6 +211,30 @@ function animate(){
     const sy = 1 - wobble * 0.8;
     const sz = 1 + wobble * 0.6;
     blob.scale.set(sx, sy, sz);
+  }
+
+  // hatchling behavior
+  const chick = monsterGroup.userData.chick;
+  const topShell = monsterGroup.userData.topShell;
+  const bottomShell = monsterGroup.userData.bottomShell;
+  if(chick && topShell && bottomShell){
+    // progress hatch over first second
+    if(!monsterGroup.userData.hatched){
+      monsterGroup.userData.hatchProgress = Math.min(1, monsterGroup.userData.hatchProgress + dt * 0.9);
+      const p = monsterGroup.userData.hatchProgress;
+      // chick rises
+      chick.position.y = -0.4 + p * 0.85;
+      // top shell rotates out
+      topShell.rotation.x = -0.6 - p * 1.4;
+      topShell.position.y = 0.9 + p * 0.2;
+      // slight bounce when fully hatched
+      if(p >= 1){ monsterGroup.userData.hatched = true; }
+    } else {
+      // idle wiggle for chick
+      const wig = 0.02 * Math.sin(t * 5.0) + 0.01 * Math.sin(t * 2.2);
+      chick.position.y = 0.45 + wig;
+      chick.rotation.y = 0.06 * Math.sin(t * 0.7);
+    }
   }
 
   // update custom shader time
