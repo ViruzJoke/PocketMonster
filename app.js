@@ -40,6 +40,18 @@ function init(){
   monsterGroup = new THREE.Group();
   scene.add(monsterGroup);
 
+  // backdrop plane (forest) - slightly behind the scene
+  const loader = new THREE.TextureLoader();
+  loader.crossOrigin = '';
+  loader.load('https://images.pexels.com/photos/34950/pexels-photo.jpg?auto=compress&cs=tinysrgb&w=1600', tex => {
+    tex.encoding = THREE.sRGBEncoding;
+    const bgMat = new THREE.MeshBasicMaterial({ map: tex, toneMapped: false });
+    const bgGeo = new THREE.PlaneGeometry(30, 12);
+    const bg = new THREE.Mesh(bgGeo, bgMat);
+    bg.position.set(0, 1.5, -8);
+    scene.add(bg);
+  });
+
   createMonster();
 
   clock = new THREE.Clock();
@@ -62,58 +74,42 @@ function init(){
 }
 
 function createMonster(){
-  // Body
-  const bodyMat = new THREE.MeshStandardMaterial({ color:0x7de3ff, roughness:0.45, metalness:0.05, emissive:0x002a35, emissiveIntensity:0.2 });
-  const bodyGeo = new THREE.SphereGeometry(1.2, 48, 36);
-  const body = new THREE.Mesh(bodyGeo, bodyMat);
-  body.position.y = 0;
-  monsterGroup.add(body);
+  // Single round blob monster
+  const bodyMat = new THREE.MeshStandardMaterial({ color:0x7de3ff, roughness:0.35, metalness:0.08, emissive:0x002a35, emissiveIntensity:0.15, flatShading: false });
+  const bodyGeo = new THREE.SphereGeometry(1.2, 64, 64);
+  const blob = new THREE.Mesh(bodyGeo, bodyMat);
+  blob.position.set(0, 0, 0);
+  blob.castShadow = true;
+  blob.receiveShadow = true;
+  monsterGroup.add(blob);
 
-  // Head bump
-  const headGeo = new THREE.SphereGeometry(0.6, 32, 24);
-  const head = new THREE.Mesh(headGeo, bodyMat);
-  head.position.set(0, 0.9, 0.85);
-  head.scale.set(1.05,1.05,0.85);
-  monsterGroup.add(head);
-
-  // Eyes
-  const eyeGeo = new THREE.SphereGeometry(0.12, 16, 12);
-  const eyeMat = new THREE.MeshStandardMaterial({ color:0x001018, roughness:0.3, metalness:0.3 });
+  // Eyes (front-facing)
+  const eyeGeo = new THREE.SphereGeometry(0.11, 16, 12);
+  const eyeMat = new THREE.MeshStandardMaterial({ color:0x001018, roughness:0.2, metalness:0.3 });
   const leftEye = new THREE.Mesh(eyeGeo, eyeMat);
   const rightEye = leftEye.clone();
-  leftEye.position.set(-0.28, 0.9, 1.25);
-  rightEye.position.set(0.28, 0.9, 1.25);
+  leftEye.position.set(-0.35, 0.15, 1.02);
+  rightEye.position.set(0.35, 0.15, 1.02);
   monsterGroup.add(leftEye, rightEye);
 
   // Eye glints
   const glintGeo = new THREE.CircleGeometry(0.04, 12);
   const glintMat = new THREE.MeshBasicMaterial({ color:0xffffff });
-  const g1 = new THREE.Mesh(glintGeo, glintMat); g1.position.set(-0.24,0.95,1.34); g1.rotation.x = -0.3;
-  const g2 = g1.clone(); g2.position.set(0.32,0.95,1.34);
+  const g1 = new THREE.Mesh(glintGeo, glintMat); g1.position.set(-0.28,0.28,1.06); g1.rotation.x = -0.3;
+  const g2 = g1.clone(); g2.position.set(0.4,0.28,1.06);
   monsterGroup.add(g1,g2);
 
-  // Cute horns
-  const hornMat = new THREE.MeshStandardMaterial({ color:0xfff1a8, roughness:0.5 });
-  const hornGeo = new THREE.ConeGeometry(0.15,0.45,16);
-  const h1 = new THREE.Mesh(hornGeo, hornMat); h1.position.set(-0.5,1.5,0.25); h1.rotation.z = 0.4;
-  const h2 = h1.clone(); h2.position.set(0.5,1.5,0.25); h2.rotation.z = -0.4;
-  monsterGroup.add(h1,h2);
-
-  // tail
-  const tailGeo = new THREE.ConeGeometry(0.25, 0.9, 18);
-  const tail = new THREE.Mesh(tailGeo, bodyMat); tail.position.set(0,0.1,-1.6); tail.rotation.x = Math.PI - 0.7; tail.scale.set(0.9,0.9,0.9);
-  monsterGroup.add(tail);
-
-  // subtle material sheen
+  // subtle material sheen shader injection (kept for blob)
   bodyMat.onBeforeCompile = shader => {
     shader.uniforms.time = { value: 0 };
-    // prepend a uniform
     shader.fragmentShader = 'uniform float time;\n' + shader.fragmentShader;
-    // inject a small animated sheen into the lighting calculations
-    const inject = '\n#ifdef USE_ROUGHNESSMAP\n#endif\nfloat glow = 0.08 * (0.5 + 0.5 * sin(time * 1.2 + position.y * 2.0));\nvec3 addCol = vec3(0.02,0.06,0.08) * glow;\n// add to diffuse term when available\n#ifdef USE_LIGHTMAP\nmeasuredLambert += addCol;\n#else\nmeasuredLambert += addCol;\n#endif\n';
+    const inject = '\nfloat glow = 0.06 * (0.5 + 0.5 * sin(time * 1.6 + position.y * 2.0));\nvec3 addCol = vec3(0.02,0.06,0.08) * glow;\n#ifdef USE_LIGHTMAP\nmeasuredLambert += addCol;\n#else\nmeasuredLambert += addCol;\n#endif\n';
     shader.fragmentShader = shader.fragmentShader.replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>' + inject);
     bodyMat.userData._shader = shader;
   };
+
+  // store reference for wobble animation
+  monsterGroup.userData.blob = blob;
 }
 
 function onWindowResize(){
@@ -186,16 +182,19 @@ function animate(){
   requestAnimationFrame(animate);
   const dt = clock.getDelta();
 
-  // idle breathing and head bob
+  // idle sway (left-right) and subtle rotation
   const t = Date.now() * 0.001;
-  monsterGroup.position.y = 0.08 * Math.sin(t * 1.2);
-  monsterGroup.rotation.y = 0.06 * Math.sin(t * 0.5);
-  monsterGroup.children.forEach(c => {
-    if(c.geometry && c.geometry.type === 'ConeGeometry'){
-      // tail wag
-      c.rotation.z = 0.8 + Math.sin(t * 3) * 0.25;
-    }
-  });
+  monsterGroup.position.x = 0.18 * Math.sin(t * 0.9); // sway on X axis
+  monsterGroup.rotation.y = 0.06 * Math.sin(t * 0.6);
+  // jelly wobble: scale blob in Y vs XZ
+  const blob = monsterGroup.userData.blob;
+  if(blob){
+    const wobble = 0.04 * Math.sin(t * 4.0) + 0.02 * Math.sin(t * 2.3);
+    const sx = 1 + wobble * 0.6;
+    const sy = 1 - wobble * 0.8;
+    const sz = 1 + wobble * 0.6;
+    blob.scale.set(sx, sy, sz);
+  }
 
   // update custom shader time
   monsterGroup.traverse(c => {
