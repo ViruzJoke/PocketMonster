@@ -1,12 +1,40 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="th">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>2D Game</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>Pocket Monster</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <img id="character" src="Agumon.gif" alt="character">
+
+    <div id="game-container">
+        <div id="monster-screen">
+            <img id="monster-image" src="Agumon.gif" alt="Your Monster">
+            <div id="poop-area"></div>
+        </div>
+        <div id="stats-container">
+            <div class="stat">
+                <span>หิว:</span>
+                <span id="hunger-stat">100</span>
+            </div>
+            <div class="stat">
+                <span>ความสุข:</span>
+                <span id="happiness-stat">100</span>
+            </div>
+            <div class="stat">
+                <span>พลังงาน:</span>
+                <span id="energy-stat">100</span>
+            </div>
+        </div>
+        <div id="controls-container">
+            <button id="feed-button">ให้อาหาร</button>
+            <button id="clean-button">ทำความสะอาด</button>
+            <button id="play-button">เล่นด้วย</button>
+        </div>
+        <div id="notification-area"></div>
+    </div>
+
+    <script src="game.js"></script>
 </body>
 </html>
