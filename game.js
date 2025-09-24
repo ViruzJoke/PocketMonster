@@ -1,115 +1,44 @@
 document.addEventListener('DOMContentLoaded', () => {
     // --- DOM Elements ---
     const monsterImage = document.getElementById('monster-image');
-    const hungerStat = document.getElementById('hunger-stat');
-    const happinessStat = document.getElementById('happiness-stat');
-    const energyStat = document.getElementById('energy-stat');
-    const feedButton = document.getElementById('feed-button');
-    const cleanButton = document.getElementById('clean-button');
-    const playButton = document.getElementById('play-button');
-    const saveButton = document.getElementById('save-button'); // New
     const notificationArea = document.getElementById('notification-area');
     const poopArea = document.getElementById('poop-area');
 
-    // --- Game State ---
-    let monster = {
-        hunger: 100,
-        happiness: 100,
-        energy: 100,
-        poopCount: 0,
-    };
-
-    // --- Game Functions ---
-    function updateStats() {
-        hungerStat.textContent = monster.hunger;
-        happinessStat.textContent = monster.happiness;
-        energyStat.textContent = monster.energy;
-
-        poopArea.innerHTML = '';
-        for (let i = 0; i < monster.poopCount; i++) {
-            poopArea.innerHTML += '💩';
-        }
-
-        if (monster.hunger <= 0) {
-            endGame("เจ้ามอนหิวจนหมดแรง...");
-        }
-    }
-
-    function showNotification(message) {
-        notificationArea.textContent = message;
-        setTimeout(() => {
-            notificationArea.textContent = '';
-        }, 2000);
-    }
-
-    function feed() {
-        if (monster.energy <= 0) {
-            showNotification("มันเหนื่อยเกินไปที่จะกิน");
-            return;
-        }
-        monster.hunger = Math.min(100, monster.hunger + 20);
-        monster.energy = Math.max(0, monster.energy - 5);
-        if (Math.random() < 0.3) {
-            monster.poopCount = Math.min(3, monster.poopCount + 1);
-        }
-        updateStats();
-    }
-
-    function clean() {
-        if (monster.poopCount > 0) {
-            monster.poopCount = 0;
-            monster.happiness = Math.min(100, monster.happiness + 10);
-            showNotification("สะอาดแล้ว!");
-        } else {
-            showNotification("ไม่เห็นมีอะไรให้ทำความสะอาดเลย");
-        }
-        updateStats();
-    }
-
-    function play() {
-        if (monster.energy <= 10) {
-            showNotification("มันเหนื่อยเกินไปที่จะเล่น");
-            return;
-        }
-        monster.happiness = Math.min(100, monster.happiness + 15);
-        monster.energy = Math.max(0, monster.energy - 10);
-        updateStats();
-    }
-
-    function endGame(reason) {
-        clearInterval(gameLoop);
-        monsterImage.style.filter = 'grayscale(100%)';
-        showNotification(reason);
-        feedButton.disabled = true;
-        cleanButton.disabled = true;
-        playButton.disabled = true;
-        saveButton.disabled = true;
-    }
-
-    // --- Save/Load Functions ---
-    async function saveGame() {
-        try {
-            document.addEventListener('DOMContentLoaded', () => {
-    // --- DOM Elements ---
-    const monsterImage = document.getElementById('monster-image');
-    const hungerStat = document.getElementById('hunger-stat');
-    const happinessStat = document.getElementById('happiness-stat');
-    const energyStat = document.getElementById('energy-stat');
+    // Buttons
     const feedButton = document.getElementById('feed-button');
     const cleanButton = document.getElementById('clean-button');
     const playButton = document.getElementById('play-button');
-    const notificationArea = document.getElementById('notification-area');
-    const poopArea = document.getElementById('poop-area');
+    const trainButton = document.getElementById('train-button');
+
+    // Stat Displays
+    const hungerStat = document.getElementById('hunger-stat');
+    const happinessStat = document.getElementById('happiness-stat');
+    const energyStat = document.getElementById('energy-stat');
+    const levelStat = document.getElementById('level-stat');
+    const expStat = document.getElementById('exp-stat');
+    const expNextStat = document.getElementById('exp-next-stat');
+    const atkStat = document.getElementById('atk-stat');
+    const defStat = document.getElementById('def-stat');
+    const spdStat = document.getElementById('spd-stat');
 
     // --- Game State ---
-    let monster = {
-        hunger: 100,
-        happiness: 100,
-        energy: 100,
-        poopCount: 0,
-    };
-
+    let monster = {};
     const SAVE_KEY = 'pocketmonster-save';
+
+    function initMonsterState() {
+        monster = {
+            hunger: 100,
+            happiness: 100,
+            energy: 100,
+            poopCount: 0,
+            level: 1,
+            exp: 0,
+            expToNextLevel: 100,
+            atk: 5,
+            def: 5,
+            spd: 5,
+        };
+    }
 
     // --- Save/Load Functions (Using localStorage) ---
     function saveGame() {
@@ -120,18 +49,34 @@ document.addEventListener('DOMContentLoaded', () => {
         const savedData = localStorage.getItem(SAVE_KEY);
         if (savedData) {
             monster = JSON.parse(savedData);
+            // Backward compatibility for old saves
+            monster.level = monster.level || 1;
+            monster.exp = monster.exp || 0;
+            monster.expToNextLevel = monster.expToNextLevel || 100;
+            monster.atk = monster.atk || 5;
+            monster.def = monster.def || 5;
+            monster.spd = monster.spd || 5;
             showNotification("โหลดข้อมูลล่าสุดจ้า!");
         } else {
+            initMonsterState();
             showNotification("สวัสดี! ฉันคือดิจิมอนคู่หูของนาย!");
         }
         updateStats();
     }
 
-    // --- Game Functions ---
+    // --- Game Logic ---
     function updateStats() {
+        // Core Stats
         hungerStat.textContent = monster.hunger;
         happinessStat.textContent = monster.happiness;
         energyStat.textContent = monster.energy;
+        // Growth Stats
+        levelStat.textContent = monster.level;
+        expStat.textContent = monster.exp;
+        expNextStat.textContent = monster.expToNextLevel;
+        atkStat.textContent = monster.atk;
+        defStat.textContent = monster.def;
+        spdStat.textContent = monster.spd;
 
         poopArea.innerHTML = '';
         for (let i = 0; i < monster.poopCount; i++) {
@@ -150,16 +95,40 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 2000);
     }
 
-    function feed() {
-        if (monster.energy <= 0) {
-            showNotification("มันเหนื่อยเกินไปที่จะกิน");
+    function levelUp() {
+        monster.level++;
+        monster.exp = 0;
+        monster.expToNextLevel = Math.floor(monster.expToNextLevel * 1.5);
+        monster.atk += Math.floor(Math.random() * 3) + 1; // Increase by 1-3
+        monster.def += Math.floor(Math.random() * 3) + 1;
+        monster.spd += Math.floor(Math.random() * 3) + 1;
+        showNotification(`เลเวลอัป! เป็นเลเวล ${monster.level} แล้ว!`);
+    }
+
+    function addExperience(amount) {
+        monster.exp += amount;
+        if (monster.exp >= monster.expToNextLevel) {
+            levelUp();
+        }
+    }
+
+    function train() {
+        if (monster.energy < 20) {
+            showNotification("พลังงานไม่พอสำหรับฝึกฝน");
             return;
         }
+        monster.energy -= 20;
+        const expGained = Math.floor(Math.random() * 20) + 10; // Gain 10-29 exp
+        addExperience(expGained);
+        showNotification(`ได้รับการฝึกฝน! ได้รับ ${expGained} EXP!`);
+        updateStats();
+    }
+
+    function feed() {
+        if (monster.energy <= 0) { return; }
         monster.hunger = Math.min(100, monster.hunger + 20);
         monster.energy = Math.max(0, monster.energy - 5);
-        if (Math.random() < 0.3) {
-            monster.poopCount = Math.min(3, monster.poopCount + 1);
-        }
+        if (Math.random() < 0.3) { monster.poopCount = Math.min(3, monster.poopCount + 1); }
         updateStats();
     }
 
@@ -167,18 +136,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (monster.poopCount > 0) {
             monster.poopCount = 0;
             monster.happiness = Math.min(100, monster.happiness + 10);
-            showNotification("สะอาดแล้ว!");
-        } else {
-            showNotification("ไม่เห็นมีอะไรให้ทำความสะอาดเลย");
         }
         updateStats();
     }
 
     function play() {
-        if (monster.energy <= 10) {
-            showNotification("มันเหนื่อยเกินไปที่จะเล่น");
-            return;
-        }
+        if (monster.energy <= 10) { return; }
         monster.happiness = Math.min(100, monster.happiness + 15);
         monster.energy = Math.max(0, monster.energy - 10);
         updateStats();
@@ -188,80 +151,25 @@ document.addEventListener('DOMContentLoaded', () => {
         clearInterval(gameLoop);
         monsterImage.style.filter = 'grayscale(100%)';
         showNotification(reason);
-        feedButton.disabled = true;
-        cleanButton.disabled = true;
-        playButton.disabled = true;
-        localStorage.removeItem(SAVE_KEY); // Clear save data on game over
+        [feedButton, cleanButton, playButton, trainButton].forEach(b => b.disabled = true);
+        localStorage.removeItem(SAVE_KEY);
     }
 
     // --- Event Listeners ---
     feedButton.addEventListener('click', feed);
     cleanButton.addEventListener('click', clean);
     playButton.addEventListener('click', play);
+    trainButton.addEventListener('click', train);
 
     // --- Game Loop ---
     const gameLoop = setInterval(() => {
         monster.hunger = Math.max(0, monster.hunger - 2);
         monster.happiness = Math.max(0, monster.happiness - 1);
-        
-        if (monster.poopCount > 0) {
-            monster.happiness = Math.max(0, monster.happiness - 3);
-        }
-
+        if (monster.poopCount > 0) { monster.happiness = Math.max(0, monster.happiness - 3); }
         updateStats();
-        saveGame(); // Auto-save every loop
+        saveGame();
     }, 3000);
 
-    // Initial setup
-    loadGame();
-});
-            if (response.ok) {
-                showNotification("เกมถูกบันทึกแล้ว!");
-            } else {
-                throw new Error('Failed to save');
-            }
-        } catch (error) {
-            console.error('Save Error:', error);
-            showNotification("บันทึกเกมไม่สำเร็จ");
-        }
-    }
-
-    async function loadGame() {
-        try {
-            const response = await fetch('/api/load');
-            if (response.ok) {
-                const savedState = await response.json();
-                monster = savedState;
-                showNotification("โหลดข้อมูลสำเร็จ!");
-            } else {
-                showNotification("สวัสดี! ฉันคือดิจิมอนคู่หูของนาย!");
-            }
-        } catch (error) {
-            console.error('Load Error:', error);
-            showNotification("ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้");
-        } finally {
-            updateStats();
-        }
-    }
-
-    // --- Event Listeners ---
-    feedButton.addEventListener('click', feed);
-    cleanButton.addEventListener('click', clean);
-    playButton.addEventListener('click', play);
-    saveButton.addEventListener('click', saveGame); // New
-
-    // --- Game Loop ---
-    const gameLoop = setInterval(() => {
-        monster.hunger = Math.max(0, monster.hunger - 2);
-        monster.happiness = Math.max(0, monster.happiness - 1);
-        
-        if (monster.poopCount > 0) {
-            monster.happiness = Math.max(0, monster.happiness - 3);
-        }
-
-        updateStats();
-    }, 3000);
-
-    // Initial setup
+    // --- Initial Setup ---
     loadGame();
 });

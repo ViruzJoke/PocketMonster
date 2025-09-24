@@ -78,3 +78,23 @@ button:active {
     color: #ff0000;
     font-weight: bold;
 }
+
+/* New Styles for Extra Stats */
+#stats-extra {
+    background-color: #c0c0c0;
+    border: 2px solid #333;
+    border-radius: 5px;
+    padding: 10px;
+    margin: 10px 0;
+    font-size: 14px;
+}
+
+.stat-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 2px 5px;
+}
+
+.stat-row span:first-child {
+    font-weight: bold;
+}
