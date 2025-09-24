@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
             clean: 'ทำความสะอาด',
             play: 'เล่นด้วย',
             train: 'ฝึกฝน',
+            sleep: 'นอนหลับ',
             levelUp: 'เลเวลอัป! เป็นเลเวล {level} แล้ว!',
             expGain: 'ได้รับการฝึกฝน! ได้รับ {exp} EXP!',
             noEnergyTrain: 'พลังงานไม่พอสำหรับฝึกฝน',
@@ -20,6 +21,9 @@ document.addEventListener('DOMContentLoaded', () => {
             gameOverSad: 'เจ้ามอนเศร้าจนหนีออกจากบ้าน...',
             loadSuccess: 'โหลดข้อมูลล่าสุดจ้า!',
             welcome: 'สวัสดี! ฉันคือดิจิมอนคู่หูของนาย!',
+            monsterSleeping: 'มอนสเตอร์กำลังหลับอยู่...',
+            wokeUp: 'มอนสเตอร์ตื่นแล้ว! รู้สึกสดชื่น!',
+            disturbSleep: 'รบกวนการนอน! ความสุขลดลง!',
         },
         en: {
             hunger: 'Hunger',
@@ -29,6 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
             clean: 'Clean',
             play: 'Play',
             train: 'Train',
+            sleep: 'Sleep',
             levelUp: 'Leveled up! Now level {level}!',
             expGain: 'Training complete! Gained {exp} EXP!',
             noEnergyTrain: 'Not enough energy to train',
@@ -40,6 +45,9 @@ document.addEventListener('DOMContentLoaded', () => {
             gameOverSad: 'The monster ran away from sadness...',
             loadSuccess: 'Successfully loaded save data!',
             welcome: 'Hello! I am your partner Digimon!',
+            monsterSleeping: 'Monster is sleeping...',
+            wokeUp: 'Monster woke up! Feeling refreshed!',
+            disturbSleep: 'Disturbed sleep! Happiness decreased!',
         }
     };
     let currentLang = 'th';
@@ -49,7 +57,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const monsterImage = document.getElementById('monster-image');
     const notificationArea = document.getElementById('notification-area');
     const poopArea = document.getElementById('poop-area');
-    const allButtons = ['feed', 'clean', 'play', 'train'].map(id => document.getElementById(`${id}-button`));
+    const allButtons = ['feed', 'clean', 'play', 'train', 'sleep'].map(id => document.getElementById(`${id}-button`));
 
     // Stat Displays
     const hungerStat = document.getElementById('hunger-stat');
@@ -65,6 +73,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Game State ---
     let monster = {};
     let isAnimating = false;
+    let isSleeping = false;
     const SAVE_KEY = 'pocketmonster-save';
 
     // --- Core Functions ---
@@ -84,7 +93,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function playAnimation(animationName, duration) {
-        if (isAnimating) return;
+        if (isAnimating || isSleeping) return;
         isAnimating = true;
         allButtons.forEach(b => b.disabled = true);
 
@@ -113,6 +122,7 @@ document.addEventListener('DOMContentLoaded', () => {
             atk: 5,
             def: 5,
             spd: 5,
+            isSleeping: false, // Initialize isSleeping state
         };
     }
 
@@ -126,6 +136,7 @@ document.addEventListener('DOMContentLoaded', () => {
             monster = JSON.parse(savedData);
             // Backward compatibility
             monster.name = monster.name || 'Agumon';
+            monster.isSleeping = monster.isSleeping || false; // Load isSleeping state
             showNotification(getString('loadSuccess'));
         } else {
             initMonsterState();
@@ -179,7 +190,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Actions ---
     function train() {
-        if (isAnimating) return;
+        if (isAnimating || isSleeping) { 
+            if (isSleeping) { disturbSleep(); } 
+            return; 
+        }
         if (monster.energy < 20) { return showNotification(getString('noEnergyTrain')); }
         monster.energy -= 20;
         const expGained = Math.floor(Math.random() * 20) + 10; // Gain 10-29 exp
@@ -190,7 +204,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function feed() {
-        if (isAnimating) return;
+        if (isAnimating || isSleeping) { 
+            if (isSleeping) { disturbSleep(); } 
+            return; 
+        }
         if (monster.energy <= 0) { return showNotification(getString('noEnergyEat')); }
         monster.hunger = Math.min(100, monster.hunger + 20);
         monster.energy = Math.max(0, monster.energy - 5);
@@ -200,7 +217,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function clean() {
-        if (isAnimating) return;
+        if (isAnimating || isSleeping) { 
+            if (isSleeping) { disturbSleep(); } 
+            return; 
+        }
         if (monster.poopCount > 0) {
             monster.poopCount = 0;
             monster.happiness = Math.min(100, monster.happiness + 10);
@@ -212,11 +232,41 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function play() {
-        if (isAnimating) return;
+        if (isAnimating || isSleeping) { 
+            if (isSleeping) { disturbSleep(); } 
+            return; 
+        }
         if (monster.energy <= 10) { return showNotification(getString('noEnergyPlay')); }
         monster.happiness = Math.min(100, monster.happiness + 15);
         monster.energy = Math.max(0, monster.energy - 10);
         playAnimation('play', 2000);
+        updateStats();
+    }
+
+    function sleep() {
+        if (isAnimating || isSleeping) return; // Cannot sleep if animating or already sleeping
+        if (monster.energy >= 100) { showNotification("พลังงานเต็มแล้ว ไม่จำเป็นต้องนอน"); return; }
+
+        isSleeping = true;
+        monster.isSleeping = true; // Update monster state
+        allButtons.forEach(b => b.disabled = true);
+        showNotification(getString('monsterSleeping'));
+        playAnimation('sleep', 10000); // Sleep animation for 10 seconds
+
+        setTimeout(() => {
+            isSleeping = false;
+            monster.isSleeping = false; // Update monster state
+            allButtons.forEach(b => b.disabled = false);
+            monster.energy = 100; // Fully recover energy
+            showNotification(getString('wokeUp'));
+            updateStats();
+            saveGame();
+        }, 10000); // Monster sleeps for 10 seconds
+    }
+
+    function disturbSleep() {
+        showNotification(getString('disturbSleep'));
+        monster.happiness = Math.max(0, monster.happiness - 5);
         updateStats();
     }
 
@@ -233,10 +283,11 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('clean-button').addEventListener('click', clean);
     document.getElementById('play-button').addEventListener('click', play);
     document.getElementById('train-button').addEventListener('click', train);
+    document.getElementById('sleep-button').addEventListener('click', sleep);
 
     // --- Game Loop ---
     const gameLoop = setInterval(() => {
-        if (isAnimating) return; // Pause stat decay during animations
+        if (isAnimating || isSleeping) return; // Pause stat decay during animations or sleep
         monster.hunger = Math.max(0, monster.hunger - 2);
         monster.happiness = Math.max(0, monster.happiness - 1);
         if (monster.poopCount > 0) { monster.happiness = Math.max(0, monster.happiness - 3); }
