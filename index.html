@@ -10,20 +10,20 @@
 
     <div id="game-container">
         <div id="monster-screen">
-            <img id="monster-image" src="Agumon.gif" alt="Your Monster">
+            <img id="monster-image" alt="Your Monster">
             <div id="poop-area"></div>
         </div>
         <div id="stats-container">
             <div class="stat">
-                <span>หิว:</span>
+                <span data-lang="hunger"></span>:
                 <span id="hunger-stat">100</span>
             </div>
             <div class="stat">
-                <span>ความสุข:</span>
+                <span data-lang="happiness"></span>:
                 <span id="happiness-stat">100</span>
             </div>
             <div class="stat">
-                <span>พลังงาน:</span>
+                <span data-lang="energy"></span>:
                 <span id="energy-stat">100</span>
             </div>
         </div>
@@ -35,10 +35,10 @@
             <div class="stat-row"><span>SPD:</span> <span id="spd-stat">5</span></div>
         </div>
         <div id="controls-container">
-            <button id="feed-button">ให้อาหาร</button>
-            <button id="clean-button">ทำความสะอาด</button>
-            <button id="play-button">เล่นด้วย</button>
-            <button id="train-button">ฝึกฝน</button>
+            <button id="feed-button" data-lang="feed"></button>
+            <button id="clean-button" data-lang="clean"></button>
+            <button id="play-button" data-lang="play"></button>
+            <button id="train-button" data-lang="train"></button>
         </div>
         <div id="notification-area"></div>
     </div>
